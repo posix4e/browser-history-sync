@@ -18,6 +18,21 @@ module.exports = {
       files: ['chrome-extension/**/*.js'],
       env: {
         webextensions: true,
+        browser: true,
+      },
+      globals: {
+        BrowserP2PAdapter: 'readonly',
+        importScripts: 'readonly',
+      },
+    },
+    {
+      files: ['tests/**/*.js'],
+      env: {
+        webextensions: true,
+        browser: true,
+      },
+      globals: {
+        chrome: 'readonly',
       },
     },
   ],

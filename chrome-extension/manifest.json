@@ -3,13 +3,9 @@
   "name": "Browser History Sync",
   "version": "0.1.0",
   "description": "Sync browser history with iOS Safari using P2P",
-  "permissions": [
-    "history",
-    "storage",
-    "tabs"
-  ],
+  "permissions": ["history", "storage", "tabs"],
   "background": {
-    "service_worker": "src/background.js"
+    "service_worker": "src/service-worker.js"
   },
   "action": {
     "default_popup": "src/popup.html",
