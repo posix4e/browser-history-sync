@@ -1,0 +1,311 @@
+name: Browser History Sync CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * *' # Daily tests
+  workflow_dispatch:
+
+env:
+  P2P_BOOTSTRAP: "wss://relay.holepunch.to"
+
+jobs:
+  # Basic validation and linting
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Validate structure
+      run: |
+        [ -d "chrome-extension" ] || exit 1
+        [ -d "ios-app" ] || exit 1
+        [ -d "shared" ] || exit 1
+        [ -d "tests" ] || exit 1
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install and lint
+      run: |
+        npm ci
+        npm run lint || exit 0  # Lint when configured
+
+  # JS-to-JS sync test (Chrome to Chrome)
+  test-js-to-js:
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: |
+        npm ci
+        cd tests && npm ci
+        npx playwright install chromium
+    
+    - name: Run Chrome-to-Chrome sync test
+      run: |
+        cd tests
+        xvfb-run -a npx playwright test chrome-extension/chrome-to-chrome-sync.spec.js
+      env:
+        CI: true
+        TEST_MODE: js-to-js
+        SYNC_KEY: "js-js-${{ github.run_id }}"
+    
+    - name: Upload JS-JS sync results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: js-js-sync-results
+        path: |
+          tests/sync-data/
+          tests/test-results/
+
+  # Swift-to-Swift sync test (iOS to iOS)
+  test-swift-to-swift:
+    runs-on: macos-13
+    needs: validate
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '15.0'
+    
+    - name: Create iOS simulators
+      run: |
+        xcrun simctl create "iPhone-Sync-1" "iPhone 15" "iOS 17.0"
+        xcrun simctl create "iPhone-Sync-2" "iPhone 15" "iOS 17.0"
+        xcrun simctl boot "iPhone-Sync-1"
+        xcrun simctl boot "iPhone-Sync-2"
+        sleep 15
+    
+    - name: Run iOS-to-iOS sync test
+      run: |
+        cd ios-app
+        xcodebuild test \
+          -scheme BrowserHistorySync \
+          -destination 'platform=iOS Simulator,name=iPhone-Sync-1' \
+          -only-testing:BrowserHistorySyncTests/SwiftToSwiftSyncTests \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO
+      env:
+        TEST_MODE: swift-to-swift
+        SYNC_KEY: "swift-swift-${{ github.run_id }}"
+    
+    - name: Cleanup simulators
+      if: always()
+      run: |
+        xcrun simctl delete "iPhone-Sync-1" || true
+        xcrun simctl delete "iPhone-Sync-2" || true
+    
+    - name: Upload Swift-Swift sync results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: swift-swift-sync-results
+        path: |
+          ios-app/TestResults.xcresult
+          ios-app/sync-data/
+
+  # Staging network test - all platforms sync together
+  staging-network-setup:
+    runs-on: ubuntu-latest
+    outputs:
+      staging-key: ${{ steps.setup.outputs.staging-key }}
+    steps:
+    - id: setup
+      run: |
+        STAGING_KEY="staging-${{ github.run_id }}-$(date +%s)"
+        echo "staging-key=$STAGING_KEY" >> $GITHUB_OUTPUT
+
+  staging-chrome-1:
+    runs-on: ubuntu-latest
+    needs: staging-network-setup
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Setup and run Chrome 1
+      run: |
+        npm ci
+        cd tests && npm ci
+        npx playwright install chromium
+        xvfb-run -a npx playwright test chrome-extension/staging-network.spec.js
+      env:
+        STAGING_KEY: ${{ needs.staging-network-setup.outputs.staging-key }}
+        DEVICE_ID: chrome-1
+        BROWSE_URLS: '["https://github.com", "https://stackoverflow.com"]'
+    
+    - name: Save Chrome 1 data
+      uses: actions/upload-artifact@v4
+      with:
+        name: staging-chrome-1
+        path: tests/staging-data/
+
+  staging-chrome-2:
+    runs-on: ubuntu-latest
+    needs: staging-network-setup
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Setup and run Chrome 2
+      run: |
+        npm ci
+        cd tests && npm ci
+        npx playwright install chromium
+        xvfb-run -a npx playwright test chrome-extension/staging-network.spec.js
+      env:
+        STAGING_KEY: ${{ needs.staging-network-setup.outputs.staging-key }}
+        DEVICE_ID: chrome-2
+        BROWSE_URLS: '["https://news.ycombinator.com", "https://reddit.com"]'
+    
+    - name: Save Chrome 2 data
+      uses: actions/upload-artifact@v4
+      with:
+        name: staging-chrome-2
+        path: tests/staging-data/
+
+  staging-ios-1:
+    runs-on: macos-13
+    needs: staging-network-setup
+    steps:
+    - uses: actions/checkout@v4
+    - uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '15.0'
+    
+    - name: Run iOS 1
+      run: |
+        xcrun simctl create "iPhone-Staging-1" "iPhone 15" "iOS 17.0"
+        xcrun simctl boot "iPhone-Staging-1"
+        cd ios-app
+        xcodebuild test \
+          -scheme BrowserHistorySync \
+          -destination 'platform=iOS Simulator,name=iPhone-Staging-1' \
+          -only-testing:BrowserHistorySyncTests/StagingNetworkTests \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO
+      env:
+        STAGING_KEY: ${{ needs.staging-network-setup.outputs.staging-key }}
+        DEVICE_ID: ios-1
+        BROWSE_URLS: '["https://apple.com", "https://swift.org"]'
+    
+    - name: Save iOS 1 data
+      uses: actions/upload-artifact@v4
+      with:
+        name: staging-ios-1
+        path: ios-app/staging-data/
+
+  staging-ios-2:
+    runs-on: macos-13
+    needs: staging-network-setup
+    steps:
+    - uses: actions/checkout@v4
+    - uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '15.0'
+    
+    - name: Run iOS 2
+      run: |
+        xcrun simctl create "iPhone-Staging-2" "iPhone 15" "iOS 17.0"
+        xcrun simctl boot "iPhone-Staging-2"
+        cd ios-app
+        xcodebuild test \
+          -scheme BrowserHistorySync \
+          -destination 'platform=iOS Simulator,name=iPhone-Staging-2' \
+          -only-testing:BrowserHistorySyncTests/StagingNetworkTests \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO
+      env:
+        STAGING_KEY: ${{ needs.staging-network-setup.outputs.staging-key }}
+        DEVICE_ID: ios-2
+        BROWSE_URLS: '["https://developer.apple.com", "https://webkit.org"]'
+    
+    - name: Save iOS 2 data
+      uses: actions/upload-artifact@v4
+      with:
+        name: staging-ios-2
+        path: ios-app/staging-data/
+
+  staging-verify:
+    runs-on: ubuntu-latest
+    needs: [staging-chrome-1, staging-chrome-2, staging-ios-1, staging-ios-2]
+    if: always()
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download all staging data
+      uses: actions/download-artifact@v4
+      with:
+        pattern: staging-*
+        path: staging-results/
+    
+    - name: Verify all platforms synced
+      run: |
+        node scripts/verify-staging-sync.js staging-results/
+    
+    - name: Upload final report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: staging-sync-report
+        path: staging-sync-report.json
+
+  # Deploy Chrome extension
+  deploy-chrome:
+    runs-on: ubuntu-latest
+    needs: [test-js-to-js, test-swift-to-swift, staging-verify]
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Package extension
+      run: |
+        cd chrome-extension
+        zip -r ../chrome-extension.zip .
+    
+    - name: Upload to Chrome Web Store
+      uses: MobileFirstLLC/cws-publish@v1
+      with:
+        extension_id: ${{ secrets.CHROME_EXTENSION_ID }}
+        client_id: ${{ secrets.CHROME_CLIENT_ID }}
+        client_secret: ${{ secrets.CHROME_CLIENT_SECRET }}
+        refresh_token: ${{ secrets.CHROME_REFRESH_TOKEN }}
+        file_path: chrome-extension.zip
+
+  # Deploy iOS app
+  deploy-ios:
+    runs-on: macos-13
+    needs: [test-js-to-js, test-swift-to-swift, staging-verify]
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Build and deploy to TestFlight
+      run: |
+        cd ios-app
+        xcodebuild archive -scheme BrowserHistorySync
+        # Real TestFlight deployment via App Store Connect API

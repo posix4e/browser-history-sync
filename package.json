@@ -1,0 +1,36 @@
+{
+  "name": "browser-history-sync",
+  "version": "0.1.0",
+  "description": "P2P browser history sync between Safari iOS and Chrome desktop",
+  "private": true,
+  "workspaces": [
+    "chrome-extension",
+    "shared",
+    "tests"
+  ],
+  "scripts": {
+    "setup": "npm ci && npm run setup:chrome && npm run setup:shared && npm run setup:tests",
+    "setup:chrome": "cd chrome-extension && npm ci",
+    "setup:shared": "cd shared && npm ci",
+    "setup:tests": "cd tests && npm ci && npx playwright install chromium",
+    "test": "npm run test:validate && npm run test:chrome",
+    "test:validate": "node scripts/validate-structure.js",
+    "test:chrome": "cd tests && playwright test chrome-extension/basic.spec.js",
+    "test:chrome:sync": "cd tests && playwright test chrome-extension/chrome-to-chrome-sync.spec.js",
+    "test:chrome:local": "cd tests && npx playwright test chrome-extension/basic.spec.js --headed",
+    "test:sync:local": "cd tests && npx playwright test chrome-extension/chrome-to-chrome-sync.spec.js --headed",
+    "test:ios": "cd ios-app && xcodebuild test -scheme BrowserHistorySync -destination 'platform=iOS Simulator,name=iPhone 15'",
+    "build:chrome": "cd chrome-extension && npm run build",
+    "package:chrome": "cd chrome-extension && zip -r ../browser-history-sync.zip . -x '*.DS_Store' 'node_modules/*'",
+    "lint": "eslint . --ext .js,.jsx",
+    "format": "prettier --write '**/*.{js,jsx,json,md}'"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "eslint": "^8.56.0",
+    "prettier": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "@browser-history-sync/tests",
+  "version": "0.1.0",
+  "description": "E2E tests for browser history sync",
+  "type": "module",
+  "scripts": {
+    "test:chrome": "playwright test chrome-extension/",
+    "test:ios": "echo 'iOS tests will be run via Xcode'",
+    "test:interop": "echo 'Interop tests TBD'"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "playwright": "^1.40.0"
+  }
+}

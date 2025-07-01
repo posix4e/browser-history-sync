@@ -1,0 +1,15 @@
+{
+  "name": "@browser-history-sync/shared",
+  "version": "0.1.0",
+  "description": "Shared P2P networking code for browser history sync",
+  "main": "src/index.js",
+  "type": "module",
+  "dependencies": {
+    "hypercore": "^10.37.11",
+    "hyperswarm": "^4.8.0",
+    "b4a": "^1.6.6"
+  },
+  "devDependencies": {
+    "brittle": "^3.0.0"
+  }
+}

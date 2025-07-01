@@ -1,0 +1,10 @@
+{
+  "name": "@browser-history-sync/chrome-extension",
+  "version": "0.1.0",
+  "description": "Chrome extension for browser history sync",
+  "scripts": {
+    "build": "echo 'No build step needed for basic extension'",
+    "package": "zip -r browser-history-sync.zip manifest.json src/ icons/",
+    "test": "echo 'Tests run from parent directory'"
+  }
+}

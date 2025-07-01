@@ -1,0 +1,28 @@
+node_modules/
+dist/
+build/
+*.log
+.env
+.DS_Store
+
+# Chrome extension
+chrome-extension/dist/
+chrome-extension/*.zip
+chrome-extension/*.crx
+
+# iOS
+ios-app/build/
+ios-app/DerivedData/
+ios-app/*.xcworkspace/xcuserdata/
+ios-app/*.xcodeproj/xcuserdata/
+ios-app/*.xcodeproj/project.xcworkspace/xcuserdata/
+ios-app/Pods/
+
+# Testing
+test-results/
+playwright-report/
+coverage/
+
+# IDE
+.vscode/
+.idea/
