@@ -26,6 +26,19 @@ module.exports = {
       },
     },
     {
+      files: ['ios-app/**/Resources/**/*.js', 'ios-app/**/*.js'],
+      env: {
+        webextensions: true,
+        browser: true,
+      },
+      globals: {
+        browser: 'readonly',
+        BrowserP2PAdapter: 'readonly',
+        webkit: 'readonly',
+        show: 'readonly',
+      },
+    },
+    {
       files: ['tests/**/*.js'],
       env: {
         webextensions: true,
