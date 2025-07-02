@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 350px;
+      padding: 15px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      font-size: 14px;
+    }
+    h3 { 
+      margin-top: 0;
+      color: #333;
+    }
+    .status-section {
+      background: #f5f5f5;
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+    }
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 5px 0;
+    }
+    .status-label {
+      color: #666;
+    }
+    .status-value {
+      font-weight: bold;
+    }
+    .connected {
+      color: #4CAF50;
+    }
+    .disconnected {
+      color: #F44336;
+    }
+    .sync-section {
+      margin-bottom: 15px;
+    }
+    .sync-key-group {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+    #sync-key {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    button {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 3px;
+      background: #2196F3;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #1976D2;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .secondary-btn {
+      background: #757575;
+    }
+    .secondary-btn:hover {
+      background: #616161;
+    }
+    .danger-btn {
+      background: #F44336;
+    }
+    .danger-btn:hover {
+      background: #D32F2F;
+    }
+    .info-text {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+    }
+    .peer-list {
+      font-size: 12px;
+      color: #666;
+      max-height: 60px;
+      overflow-y: auto;
+      background: #f9f9f9;
+      padding: 5px;
+      border-radius: 3px;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h3>Browser History Sync</h3>
+  
+  <div class="status-section">
+    <div class="status-row">
+      <span class="status-label">Connection:</span>
+      <span id="connection-status" class="status-value disconnected">Disconnected</span>
+    </div>
+    <div class="status-row">
+      <span class="status-label">Peers:</span>
+      <span id="peer-count" class="status-value">0</span>
+    </div>
+    <div class="status-row">
+      <span class="status-label">History Items:</span>
+      <span id="history-count" class="status-value">0</span>
+    </div>
+    <div id="peer-list" class="peer-list" style="display: none;"></div>
+  </div>
+
+  <div class="sync-section">
+    <label for="sync-key" style="display: block; margin-bottom: 5px; font-weight: bold;">Sync Key:</label>
+    <div class="sync-key-group">
+      <input type="text" id="sync-key" placeholder="Enter sync key to join network">
+      <button id="update-key-btn">Update</button>
+    </div>
+    <button id="copy-key-btn" class="secondary-btn" style="width: 100%;">Copy Sync Key</button>
+    <p class="info-text">Share this key with your other devices to sync history</p>
+  </div>
+
+  <div style="display: flex; gap: 10px;">
+    <button id="refresh-btn" style="flex: 1;">Refresh Status</button>
+    <button id="clear-btn" class="danger-btn" style="flex: 1;">Clear History</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

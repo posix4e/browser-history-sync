@@ -1,0 +1,13 @@
+platform :ios, '15.0'
+
+target 'BrowserHistorySync' do
+  use_frameworks!
+  
+  # Bare runtime for P2P networking (when available)
+  # pod 'BareKit'
+  
+  # Testing
+  target 'BrowserHistorySyncTests' do
+    inherit! :search_paths
+  end
+end

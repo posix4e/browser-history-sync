@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Browser History Sync",
+  "version": "0.1.0",
+  "description": "Sync browser history with iOS Safari using P2P",
+  "permissions": ["history", "storage", "tabs"],
+  "background": {
+    "service_worker": "src/service-worker.js"
+  },
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  }
+}
